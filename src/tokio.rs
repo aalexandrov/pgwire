@@ -127,13 +127,15 @@ where
                 socket.set_state(PgWireConnectionState::ReadyForQuery);
             }
         }
-        PgWireConnectionState::CopyInProgress(is_extended_query) => {
+        state @ PgWireConnectionState::CopyInProgress(is_extended_query) => {
             // query or query in progress
             match message {
                 PgWireFrontendMessage::CopyData(copy_data) => {
+                    println!("on(PgWireFrontendMessage::CopyData) for {state:?}");
                     copy_handler.on_copy_data(socket, copy_data).await?;
                 }
                 PgWireFrontendMessage::CopyDone(copy_done) => {
+                    println!("on(PgWireFrontendMessage::CopyDone) for {state:?}");
                     let result = copy_handler.on_copy_done(socket, copy_done).await;
                     if !is_extended_query {
                         // If the copy was initiated from a simple protocol
@@ -160,6 +162,7 @@ where
                     }
                 }
                 PgWireFrontendMessage::CopyFail(copy_fail) => {
+                    println!("on(PgWireFrontendMessage::CopyFail) for {state:?}");
                     let error = copy_handler.on_copy_fail(socket, copy_fail).await;
                     if !is_extended_query {
                         // If the copy was initiated from a simple protocol query,
@@ -173,28 +176,35 @@ where
                 _ => {}
             }
         }
-        _ => {
+        state => {
             // query or query in progress
             match message {
                 PgWireFrontendMessage::Query(query) => {
+                    println!("on(PgWireFrontendMessage::Query) for {state:?}");
                     query_handler.on_query(socket, query).await?;
                 }
                 PgWireFrontendMessage::Parse(parse) => {
+                    println!("on(PgWireFrontendMessage::Parse) for {state:?}");
                     extended_query_handler.on_parse(socket, parse).await?;
                 }
                 PgWireFrontendMessage::Bind(bind) => {
+                    println!("on(PgWireFrontendMessage::Bind) for {state:?}");
                     extended_query_handler.on_bind(socket, bind).await?;
                 }
                 PgWireFrontendMessage::Execute(execute) => {
+                    println!("on(PgWireFrontendMessage::Execute) for {state:?}");
                     extended_query_handler.on_execute(socket, execute).await?;
                 }
                 PgWireFrontendMessage::Describe(describe) => {
+                    println!("on(PgWireFrontendMessage::Describe) for {state:?}");
                     extended_query_handler.on_describe(socket, describe).await?;
                 }
                 PgWireFrontendMessage::Sync(sync) => {
+                    println!("on(PgWireFrontendMessage::Sync) for {state:?}");
                     extended_query_handler.on_sync(socket, sync).await?;
                 }
                 PgWireFrontendMessage::Close(close) => {
+                    println!("on(PgWireFrontendMessage::Close) for {state:?}");
                     extended_query_handler.on_close(socket, close).await?;
                 }
                 _ => {}
